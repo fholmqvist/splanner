@@ -44,10 +44,7 @@ func main() {
 		createFile(PATH, curr, unfinishedTodos(PATH+prev))
 	}
 
-	_, err := exec.Command("xdg-open", "testing/"+curr).Output()
-	if err != nil {
-		panic(err)
-	}
+	openInEditor(PATH + curr)
 }
 
 func lastTwoFiles() (string, string) {
@@ -169,4 +166,11 @@ func taskCompleted(line []byte, i int) bool {
 	}
 
 	return false
+}
+
+func openInEditor(filepath string) {
+	_, err := exec.Command("xdg-open", filepath).Output()
+	if err != nil {
+		panic(err)
+	}
 }
