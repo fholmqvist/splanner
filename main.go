@@ -20,6 +20,7 @@
 package main
 
 import (
+	"bytes"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -33,22 +34,23 @@ const (
 )
 
 func main() {
-	filename := latestFilename()
-	if !fileIsFromToday(filename) {
-		filename = dateToFilename(time.Now())
+	curr, prev := lastTwoFiles()
+	if !fileIsFromToday(curr) {
+		prev = curr
+		curr = dateToFilename(time.Now())
 	}
 
-	if !fileExists(PATH + filename) {
-		createFile(PATH, filename)
+	if !fileExists(PATH + curr) {
+		createFile(PATH, curr, unfinishedTodos(PATH+prev))
 	}
 
-	_, err := exec.Command("xdg-open", "testing/"+filename).Output()
+	_, err := exec.Command("xdg-open", "testing/"+curr).Output()
 	if err != nil {
 		panic(err)
 	}
 }
 
-func latestFilename() string {
+func lastTwoFiles() (string, string) {
 	var dates []string
 
 	err := filepath.Walk(PATH, func(p string, i fs.FileInfo, err error) error {
@@ -74,9 +76,15 @@ func latestFilename() string {
 		panic(err)
 	}
 
-	latest := dates[len(dates)-1]
+	if len(dates) == 0 {
+		return "", ""
+	}
 
-	return latest
+	if len(dates) == 1 {
+		return dates[0], ""
+	}
+
+	return dates[len(dates)-1], dates[len(dates)-2]
 }
 
 func fileIsFromToday(filename string) bool {
@@ -96,15 +104,69 @@ func fileExists(filename string) bool {
 			panic(err)
 		}
 	}
+
 	return true
 }
 
-func createFile(path, filename string) {
+func createFile(path, filename string, todos []byte) {
 	file, err := os.Create(path + filename)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	file.WriteString("# " + filename[:len(filename)-3])
+	file.WriteString("# " + filename[:len(filename)-3] + "\n\n")
+
+	for _, todo := range bytes.Split(todos, []byte("\n")) {
+		file.Write(todo)
+		file.Write([]byte("\n"))
+	}
+}
+
+func unfinishedTodos(filepath string) []byte {
+	bb, err := os.ReadFile(filepath)
+	if err != nil {
+		panic(err)
+	}
+
+	var remaining []byte
+	for _, line := range bytes.Split(bb, []byte("\n")) {
+		i := hasTodo(line)
+		if i < 0 {
+			continue
+		}
+
+		if !taskCompleted(line, i) {
+			remaining = append(remaining, line...)
+		}
+	}
+
+	return remaining
+}
+
+func hasTodo(line []byte) int {
+	var inTodo bool
+	var open int
+	for i := 0; i < len(line); i++ {
+		if line[i] == '[' {
+			open = i
+			inTodo = true
+			continue
+		}
+		if inTodo && line[i] == ']' {
+			return open
+		}
+	}
+
+	return -1
+}
+
+func taskCompleted(line []byte, i int) bool {
+	if line[i] == '[' &&
+		bytes.ToLower(line)[i+1] == 'x' &&
+		line[i+2] == ']' {
+		return true
+	}
+
+	return false
 }
