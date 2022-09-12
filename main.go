@@ -19,6 +19,49 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 package main
 
-func main() {
+import (
+	"fmt"
+	"io/fs"
+	"path/filepath"
+	"time"
+)
 
+const (
+	PATH        = "testing/"
+	DATE_FORMAT = "2006_01_02"
+)
+
+func main() {
+	listLatest()
+}
+
+func listLatest() {
+	var dates []string
+
+	err := filepath.Walk(PATH, func(p string, i fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if i.IsDir() {
+			return nil
+		}
+
+		name := i.Name()
+		_, err = time.Parse(DATE_FORMAT, name[:10])
+		if err != nil {
+			return err
+		}
+
+		dates = append(dates, name)
+
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	latest := dates[len(dates)-1]
+
+	fmt.Println(latest)
 }
