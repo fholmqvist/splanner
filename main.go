@@ -1,5 +1,5 @@
 /*
-	DAILY PLANNER (WIP)
+	SPLANNER
 
 	Copyright (C) 2022  Fredrik Holmqvist
 
@@ -29,11 +29,13 @@ import (
 )
 
 const (
-	PATH        = "testing/"
+	PATH        = "/usr/daily-planner/"
 	DATE_FORMAT = "2006_01_02"
 )
 
 func main() {
+	createPathIfEmpty()
+
 	curr, prev := lastTwoFiles()
 	if !fileIsFromToday(curr) {
 		prev = curr
@@ -41,10 +43,25 @@ func main() {
 	}
 
 	if !fileExists(PATH + curr) {
-		createFile(PATH, curr, unfinishedTodos(PATH+prev))
+		var unfinished []byte
+		if prev != "" {
+			unfinished = unfinishedTodos(PATH + prev)
+		}
+
+		createFile(PATH, curr, unfinished)
 	}
 
 	openInEditor(PATH + curr)
+}
+
+func createPathIfEmpty() {
+	if fileExists(PATH) {
+		return
+	}
+
+	if err := os.Mkdir(PATH, 077); err != nil {
+		panic(err)
+	}
 }
 
 func lastTwoFiles() (string, string) {
@@ -121,6 +138,10 @@ func createFile(path, filename string, todos []byte) {
 }
 
 func unfinishedTodos(filepath string) []byte {
+	if !fileExists(filepath) {
+		return []byte{}
+	}
+
 	bb, err := os.ReadFile(filepath)
 	if err != nil {
 		panic(err)
