@@ -3,7 +3,7 @@
 A [suckless](https://suckless.org/) daily planner written in Go.
 
 Creates a new markdown file for the day, appending any unfinished tasks from
-yesterday.
+yesterday. Opens the file with `xdg-open`.
 
 ## REQUIREMENTS
 
