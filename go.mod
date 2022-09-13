@@ -1,3 +1,3 @@
-module github.com/Holmqvist1990/daily-planner
+module github.com/Holmqvist1990/splanner
 
 go 1.18
