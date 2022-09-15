@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	PATH        = "/usr/daily-planner/"
+	PATH        = "/usr/splanner/"
 	DATE_FORMAT = "2006_01_02"
 )
 
@@ -59,7 +59,7 @@ func createPathIfEmpty() {
 		return
 	}
 
-	if err := os.Mkdir(PATH, 077); err != nil {
+	if err := os.Mkdir(PATH, 0755); err != nil {
 		panic(err)
 	}
 }
