@@ -21,16 +21,23 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
+var (
+	PATH = setPath()
+)
+
 const (
-	PATH        = "/usr/splanner/"
 	DATE_FORMAT = "2006_01_02"
+	FILE_FLAGS  = os.O_RDWR | os.O_CREATE | os.O_TRUNC
+	PERMISSIONS = 0700
 )
 
 func main() {
@@ -54,12 +61,26 @@ func main() {
 	openInEditor(PATH + curr)
 }
 
+func setPath() string {
+	bb, err := exec.Command("bash", "-c", "echo $USER").Output()
+	if err != nil {
+		panic(err)
+	}
+
+	user := strings.Trim(string(bb), "\n")
+
+	return fmt.Sprintf("/home/%s/splanner/", user)
+}
+
 func createPathIfEmpty() {
 	if fileExists(PATH) {
 		return
 	}
 
-	if err := os.Mkdir(PATH, 0755); err != nil {
+	mkdir := fmt.Sprintf("mkdir -p -m 755 %v", PATH)
+
+	_, err := exec.Command("bash", "-c", mkdir).Output()
+	if err != nil {
 		panic(err)
 	}
 }
@@ -123,17 +144,21 @@ func fileExists(filename string) bool {
 }
 
 func createFile(path, filename string, todos []byte) {
-	file, err := os.Create(path + filename)
+	file, err := os.OpenFile(path+filename, FILE_FLAGS, PERMISSIONS)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	file.WriteString("# " + filename[:len(filename)-3] + "\n\n")
+	file.WriteString("# " + filename[:len(filename)-3] + "\n")
 
-	for _, todo := range bytes.Split(todos, []byte("\n")) {
-		file.Write(todo)
-		file.Write([]byte("\n"))
+	if len(todos) > 0 {
+		file.WriteString("\n")
+
+		for _, todo := range bytes.Split(todos, []byte("\n")) {
+			file.Write(todo)
+			file.Write([]byte("\n"))
+		}
 	}
 }
 

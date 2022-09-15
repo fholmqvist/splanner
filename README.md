@@ -22,8 +22,5 @@ If you don't have Go as root, try:
 
 ```
 make build
-sudo make bin
+sudo make copy
 ```
-
-If you are getting permission denied when running splanner,
-try running it with `sudo`.
