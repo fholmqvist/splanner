@@ -130,9 +130,8 @@ func dateToFilename(t time.Time) string {
 	return t.Format(DATE_FORMAT) + ".md"
 }
 
-// Excluding path.
-func fileExists(filename string) bool {
-	if _, err := os.Stat(filename); err != nil {
+func fileExists(filepath string) bool {
+	if _, err := os.Stat(filepath); err != nil {
 		if os.IsNotExist(err) {
 			return false
 		} else {
@@ -163,6 +162,7 @@ func createFile(path, filename string, todos []byte) {
 }
 
 func unfinishedTodos(filepath string) []byte {
+
 	if !fileExists(filepath) {
 		return []byte{}
 	}
@@ -172,14 +172,41 @@ func unfinishedTodos(filepath string) []byte {
 		panic(err)
 	}
 
+	const (
+		LOOKING = 0
+		BEGIN   = 1
+		BODY    = 2
+	)
+	STATE := LOOKING
+
 	var remaining []byte
 	for _, line := range bytes.Split(bb, []byte("\n")) {
-		i := hasTodo(line)
-		if i < 0 {
-			continue
-		}
+		var i int
 
-		if !taskCompleted(line, i) {
+		switch STATE {
+		case LOOKING:
+			i = hasTodo(line)
+			if i < 0 {
+				continue
+			}
+
+			STATE = BEGIN
+			fallthrough
+
+		case BEGIN:
+			if !taskCompleted(line, i) {
+				remaining = append(remaining, line...)
+			}
+
+			STATE = BODY
+
+		case BODY:
+			if len(line) == 0 {
+				STATE = LOOKING
+				continue
+			}
+
+			remaining = append(remaining, '\n')
 			remaining = append(remaining, line...)
 		}
 	}
@@ -188,14 +215,18 @@ func unfinishedTodos(filepath string) []byte {
 }
 
 func hasTodo(line []byte) int {
-	var inTodo bool
-	var open int
+	var (
+		inTodo bool
+		open   int
+	)
+
 	for i := 0; i < len(line); i++ {
 		if line[i] == '[' {
 			open = i
 			inTodo = true
 			continue
 		}
+
 		if inTodo && line[i] == ']' {
 			return open
 		}
@@ -215,8 +246,7 @@ func taskCompleted(line []byte, i int) bool {
 }
 
 func openInEditor(filepath string) {
-	_, err := exec.Command("xdg-open", filepath).Output()
-	if err != nil {
+	if _, err := exec.Command("xdg-open", filepath).Output(); err != nil {
 		panic(err)
 	}
 }

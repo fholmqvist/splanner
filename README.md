@@ -7,6 +7,17 @@ yesterday.
 
 Opens the file with `xdg-open`.
 
+## FORMAT
+
+```
+[ ] Unfinished task
+
+[x] Finished task
+
+[ ] Multiple
+    lines
+```
+
 ## REQUIREMENTS
 
 * [Go](https://www.go.dev/)
