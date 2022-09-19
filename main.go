@@ -204,8 +204,10 @@ func unfinishedTodos(filepath string) []byte {
 			}
 
 		case BODY:
-			if len(line) == 0 && len(lines[i+1]) == 0 {
-				STATE = LOOKING
+			if len(line) == 0 {
+				if len(lines) < i+1 && len(lines[i+1]) == 0 {
+					STATE = LOOKING
+				}
 				continue
 			}
 
