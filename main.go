@@ -162,7 +162,6 @@ func createFile(path, filename string, todos []byte) {
 }
 
 func unfinishedTodos(filepath string) []byte {
-
 	if !fileExists(filepath) {
 		return []byte{}
 	}
@@ -194,11 +193,14 @@ func unfinishedTodos(filepath string) []byte {
 			fallthrough
 
 		case BEGIN:
-			if !taskCompleted(line, i) {
-				remaining = append(remaining, line...)
+			if len(line) == 0 {
+				continue
 			}
 
-			STATE = BODY
+			if !taskCompleted(line, i) {
+				remaining = append(remaining, line...)
+				STATE = BODY
+			}
 
 		case BODY:
 			if len(line) == 0 {
