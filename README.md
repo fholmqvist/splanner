@@ -12,10 +12,13 @@ Opens the file with `xdg-open`.
 ```
 [ ] Unfinished task
 
-[x] Finished task
 
-[ ] Multiple
-    lines
+[ ] Multiple lines.
+    Directly stacked.
+
+    Empty lines are ok.
+
+[x] Finished task
 ```
 
 ## REQUIREMENTS

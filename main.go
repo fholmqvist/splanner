@@ -178,14 +178,15 @@ func unfinishedTodos(filepath string) []byte {
 	)
 	STATE := LOOKING
 
+	lines := bytes.Split(bb, []byte("\n"))
 	var remaining []byte
-	for _, line := range bytes.Split(bb, []byte("\n")) {
-		var i int
+	for i, line := range lines {
+		var lineIdx int
 
 		switch STATE {
 		case LOOKING:
-			i = hasTodo(line)
-			if i < 0 {
+			lineIdx = hasTodo(line)
+			if lineIdx < 0 {
 				continue
 			}
 
@@ -197,13 +198,13 @@ func unfinishedTodos(filepath string) []byte {
 				continue
 			}
 
-			if !taskCompleted(line, i) {
+			if !taskCompleted(line, lineIdx) {
 				remaining = append(remaining, line...)
 				STATE = BODY
 			}
 
 		case BODY:
-			if len(line) == 0 {
+			if len(line) == 0 && len(lines[i+1]) == 0 {
 				STATE = LOOKING
 				continue
 			}
