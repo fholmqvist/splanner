@@ -201,6 +201,8 @@ func unfinishedTodos(filepath string) []byte {
 			if !taskCompleted(line, lineIdx) {
 				remaining = append(remaining, line...)
 				STATE = BODY
+			} else {
+				STATE = LOOKING
 			}
 
 		case BODY:
