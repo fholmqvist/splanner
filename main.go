@@ -35,16 +35,22 @@ var (
 )
 
 const (
-	DATE_FORMAT = "2006_01_02"
+	DATE_FORMAT = "2006-01-02"
 	FILE_FLAGS  = os.O_RDWR | os.O_CREATE | os.O_TRUNC
 	PERMISSIONS = 0700
 )
 
 func main() {
-	createPathIfEmpty()
+	if !fileExists(PATH) {
+		mkdir := fmt.Sprintf("mkdir -p -m 755 %v", PATH)
+		_, err := exec.Command("bash", "-c", mkdir).Output()
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	curr, prev := lastTwoFiles()
-	if !fileIsFromToday(curr) {
+	if curr != dateToFilename(time.Now()) {
 		prev = curr
 		curr = dateToFilename(time.Now())
 	}
@@ -58,7 +64,9 @@ func main() {
 		createFile(PATH, curr, unfinished)
 	}
 
-	openInEditor(PATH + curr)
+	if _, err := exec.Command("xdg-open", PATH+curr).Output(); err != nil {
+		panic(err)
+	}
 }
 
 func setPath() string {
@@ -70,19 +78,6 @@ func setPath() string {
 	user := strings.Trim(string(bb), "\n")
 
 	return fmt.Sprintf("/home/%s/splanner/", user)
-}
-
-func createPathIfEmpty() {
-	if fileExists(PATH) {
-		return
-	}
-
-	mkdir := fmt.Sprintf("mkdir -p -m 755 %v", PATH)
-
-	_, err := exec.Command("bash", "-c", mkdir).Output()
-	if err != nil {
-		panic(err)
-	}
 }
 
 func lastTwoFiles() (string, string) {
@@ -120,10 +115,6 @@ func lastTwoFiles() (string, string) {
 	}
 
 	return dates[len(dates)-1], dates[len(dates)-2]
-}
-
-func fileIsFromToday(filename string) bool {
-	return filename == dateToFilename(time.Now())
 }
 
 func dateToFilename(t time.Time) string {
@@ -250,10 +241,4 @@ func taskCompleted(line []byte, i int) bool {
 	}
 
 	return false
-}
-
-func openInEditor(filepath string) {
-	if _, err := exec.Command("xdg-open", filepath).Output(); err != nil {
-		panic(err)
-	}
 }
