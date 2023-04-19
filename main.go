@@ -1,22 +1,3 @@
-/*
-	SPLANNER
-
-	Copyright (C) 2022  Fredrik Holmqvist
-
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 package main
 
 import (
@@ -30,23 +11,81 @@ import (
 	"time"
 )
 
+const LICENSE = `
+
+Copyright (C) 2023  Fredrik Holmqvist
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.`
+
 var (
-	PATH = setPath()
+	PATH = findOrCreatePath()
 )
 
 const (
-	DATE_FORMAT = "2006-01-02"
-	FILE_FLAGS  = os.O_RDWR | os.O_CREATE | os.O_TRUNC
-	PERMISSIONS = 0700
+	TITLE              = "SPLANNER v1.0"
+	DATE_FORMAT        = "2006-01-02"
+	FILE_FLAGS         = os.O_RDWR | os.O_CREATE | os.O_TRUNC
+	PERMISSIONS        = 0700
+	SETTINGS_PATH      = ".settings"
+	DEFAULT_FOLDER_KEY = "default_folder"
 )
 
 func main() {
-	if !fileExists(PATH) {
-		mkdir := fmt.Sprintf("mkdir -p -m 755 %v", PATH)
-		_, err := exec.Command("bash", "-c", mkdir).Output()
-		if err != nil {
-			panic(err)
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "-h":
+			fallthrough
+		case "--help":
+			fmt.Println(TITLE + `
+
+usage:
+	-h, --help	this menu
+	-l, --license	prints the license (GPLv3)
+	-d, --default	sets the default folder path
+	-c, --current	prints default folder path`)
+
+		case "-l":
+			fallthrough
+		case "--license":
+			fmt.Println(TITLE + LICENSE)
+
+		case "-d":
+			fallthrough
+		case "--default":
+			if len(os.Args) < 3 {
+				fmt.Println("please provide a path:")
+				fmt.Println("\tsplanner --default /some/path")
+				os.Exit(3)
+			}
+			err := os.WriteFile(SETTINGS_PATH, []byte(DEFAULT_FOLDER_KEY+os.Args[2]+"/"), fs.FileMode(FILE_FLAGS))
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(3)
+			}
+			fmt.Println("successfully set default folder to " + os.Args[2])
+
+		case "-c":
+			fallthrough
+		case "--current":
+			fmt.Printf("%v=%v\n", DEFAULT_FOLDER_KEY, PATH)
+
+		default:
+			fmt.Printf("unrecognized command: %v\n", os.Args[1])
+			os.Exit(3)
 		}
+
+		return
 	}
 
 	curr, prev := lastTwoFiles()
@@ -69,15 +108,63 @@ func main() {
 	}
 }
 
-func setPath() string {
-	bb, err := exec.Command("bash", "-c", "echo $USER").Output()
-	if err != nil {
-		panic(err)
+func findOrCreatePath() string {
+	var path string
+	if fileExists(SETTINGS_PATH) {
+		bb, err := os.ReadFile(SETTINGS_PATH)
+		if err != nil {
+			panic(err)
+		}
+
+		bbs := bytes.Split(bb, []byte("\n"))
+		if len(bbs) < 1 {
+			panic(fmt.Errorf("settings is empty"))
+		}
+		if !bytes.Contains(bbs[0], []byte(DEFAULT_FOLDER_KEY+"=")) {
+			panic(fmt.Errorf("first setting isn't folder"))
+		}
+
+		path = string(bytes.Split(bbs[0], []byte("="))[1])
+	} else {
+		bb, err := exec.Command("bash", "-c", "echo $USER").Output()
+		if err != nil {
+			panic(err)
+		}
+
+		user := strings.Trim(string(bb), "\n")
+
+		path = fmt.Sprintf("/home/%s/splanner/", user)
+
+		mkdir := fmt.Sprintf("mkdir -p -m 755 %v", path)
+		_, err = exec.Command("bash", "-c", mkdir).Output()
+		if err != nil {
+			panic(err)
+		}
+
+		err = os.WriteFile(
+			SETTINGS_PATH,
+			[]byte(fmt.Sprintf("%v=%v", DEFAULT_FOLDER_KEY, path)),
+			fs.FileMode(FILE_FLAGS),
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = exec.Command("bash", "-c", "chmod 775 "+SETTINGS_PATH).Output()
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	user := strings.Trim(string(bb), "\n")
+	if !fileExists(path) {
+		mkdir := fmt.Sprintf("mkdir -p -m 755 %v", path)
+		_, err := exec.Command("bash", "-c", mkdir).Output()
+		if err != nil {
+			panic(err)
+		}
+	}
 
-	return fmt.Sprintf("/home/%s/splanner/", user)
+	return path
 }
 
 func lastTwoFiles() (string, string) {
