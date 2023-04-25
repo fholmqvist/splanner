@@ -183,8 +183,6 @@ func lastTwoFiles() (string, string) {
 			return nil
 		}
 
-		fmt.Println(len(name))
-
 		_, err = time.Parse(DATE_FORMAT, name[:10])
 		if err != nil {
 			return err
@@ -265,12 +263,12 @@ func unfinishedTodos(filepath string) []byte {
 	lines := bytes.Split(bb, []byte("\n"))
 	var remaining []byte
 	for i, line := range lines {
-		var lineIdx int
+		var todoIdx int
 
 		switch STATE {
 		case LOOKING:
-			lineIdx = hasTodo(line)
-			if lineIdx < 0 {
+			todoIdx = hasTodo(line)
+			if todoIdx < 0 {
 				continue
 			}
 
@@ -282,7 +280,7 @@ func unfinishedTodos(filepath string) []byte {
 				continue
 			}
 
-			if !taskCompleted(line, lineIdx) {
+			if !taskCompleted(line, todoIdx) {
 				remaining = append(remaining, line...)
 				STATE = BODY
 			} else {
@@ -291,9 +289,20 @@ func unfinishedTodos(filepath string) []byte {
 
 		case BODY:
 			if len(line) == 0 {
+				// This and next line is empty, look for new todo.
 				if len(lines) < i+1 && len(lines[i+1]) == 0 {
 					STATE = LOOKING
 				}
+
+				// Only this line is empty, look for more body.
+				continue
+			}
+
+			// Line is new todo.
+			if hasTodo(line) != -1 {
+				remaining = append(remaining, '\n')
+				STATE = BEGIN
+				i--
 				continue
 			}
 
@@ -332,6 +341,5 @@ func taskCompleted(line []byte, i int) bool {
 		line[i+2] == ']' {
 		return true
 	}
-
 	return false
 }
