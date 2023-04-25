@@ -179,6 +179,12 @@ func lastTwoFiles() (string, string) {
 		}
 
 		name := i.Name()
+		if len(name) != 13 || !strings.Contains(name, ".md") {
+			return nil
+		}
+
+		fmt.Println(len(name))
+
 		_, err = time.Parse(DATE_FORMAT, name[:10])
 		if err != nil {
 			return err
