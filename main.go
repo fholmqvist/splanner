@@ -266,7 +266,8 @@ func unfinishedTodos(filepath string) []byte {
 
 	lines := bytes.Split(bb, []byte("\n"))
 	var remaining []byte
-	for i, line := range lines {
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
 		var todoIdx int
 
 		switch STATE {
@@ -304,6 +305,7 @@ func unfinishedTodos(filepath string) []byte {
 
 			// Line is new todo.
 			if hasTodo(line) != -1 {
+				remaining = append(remaining, '\n')
 				remaining = append(remaining, '\n')
 				STATE = BEGIN
 				i--
