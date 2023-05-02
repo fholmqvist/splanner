@@ -29,7 +29,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.`
 
 var (
-	PATH = findOrCreatePath()
+	PATH          = findOrCreatePath()
+	SETTINGS_PATH = ".settings"
 )
 
 const (
@@ -37,9 +38,12 @@ const (
 	DATE_FORMAT        = "2006-01-02"
 	FILE_FLAGS         = os.O_RDWR | os.O_CREATE | os.O_TRUNC
 	PERMISSIONS        = 0700
-	SETTINGS_PATH      = ".settings"
 	DEFAULT_FOLDER_KEY = "default_folder"
 )
+
+func init() {
+	SETTINGS_PATH = PATH + SETTINGS_PATH
+}
 
 func main() {
 	if len(os.Args) > 1 {
