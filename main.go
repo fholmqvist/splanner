@@ -41,10 +41,6 @@ const (
 	DEFAULT_FOLDER_KEY = "default_folder"
 )
 
-func init() {
-	SETTINGS_PATH = PATH + SETTINGS_PATH
-}
-
 func main() {
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
@@ -138,6 +134,8 @@ func findOrCreatePath() string {
 		user := strings.Trim(string(bb), "\n")
 
 		path = fmt.Sprintf("/home/%s/splanner/", user)
+
+		SETTINGS_PATH = path + SETTINGS_PATH
 
 		mkdir := fmt.Sprintf("mkdir -p -m 755 %v", path)
 		_, err = exec.Command("bash", "-c", mkdir).Output()
